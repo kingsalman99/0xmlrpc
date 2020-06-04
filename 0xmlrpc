@@ -1,0 +1,94 @@
+#!/bin/bash
+
+# USING ANSI COLORS
+DO="\e[0;49;95m"
+PINK="\e[0;49;35m"
+RED="\e[0;49;31m"
+GREEN="\e[0;49;91m"
+Gcyan="\e[0;49;33m"
+Cyan="\e[0;49;36m"
+STOP="\e[0m"
+#COLOUR DECLARATION END
+echo -e "${Gcyan}
+  ___                 _                 
+ / _ \               | |                
+| | | |_  ___ __ ___ | |_ __ _ __   ___ 
+| | | \ \/ /  _   _ \| | '__| '_ \ / __|
+| |_| |>  <| | | | | | | |  | |_) | (__ 
+ \___//_/\_\_| |_| |_|_|_|  | .__/ \___|
+                            | |         
+                            |_|@mehedi1194"
+echo -e "${STOP}"
+
+echo " "
+echo -e "${Cyan}[\/] Checking for the requirments"
+
+echo " "
+type -P ffuf &>/dev/null && echo -e "${RED}[$] FFUF      YES${STOP}" || echo -e "${RED}[$] FFUF      NO${STOP}"
+type -P jq &>/dev/null && echo -e "${RED}[$] JQ        YES${STOP}" || echo -e "${RED}[$] JQ        NO${STOP}"
+type -P mailx &>/dev/null && echo -e "${RED}[$] Mailx     YES${STOP}" || echo -e "${RED}[$] Mailx     NO${STOP}"
+
+echo " "
+echo -e "${Cyan}[\/] Running FFUF to finding xmlrpc file${STOP}"
+ffuf -w ./$1 -u FUZZ/xmlrpc.php -mc 405 -o $1.xmlrpc.tmp &>/dev/null
+
+echo " "
+echo -e "${Cyan}[\/] Sanitizing FFUF output${STOP}"
+cat $1.xmlrpc.tmp | jq | grep "url" | awk -F " " '{print $2}' | awk -F "\"" '{print $2}' | sed '/^$/d' | awk '!/[FUZZ]/' > $1.xmlrpc.final
+
+echo " "
+echo -e "${Cyan}[\/] Removing temporary output file${STOP}"
+rm $1.xmlrpc.tmp
+
+echo " "
+echo -e "${Cyan}[\/] Sending report email to $2 ${STOP}"
+for i in $(cat $1.xmlrpc.final);do
+
+echo "<!DOCTYPE html>
+<html lang="en">
+    <head>
+    <title>0xmlrpc report for $i</title>
+        <style>
+        img{
+            height: 500px;
+        }
+        </style>
+    </head>
+<body>
+    <p>Hello</p>
+    <p>your xmlrpc.php file is publicly available. it can lead to SSRF, Admin panel Bruteforce, DDOS attacks.</p>
+    <p>it's highly recommend to not make public those sensitive endpoints. I will mention those issues in details below</p>
+    <br>
+    <h2>Reproduce</h2>
+    <ol>
+        <li>visit $i</li>
+        <li>change request method GET to POST</li>
+        <li>add those payloads in the request body to check different issues</li>
+    </ol>
+    <br>
+    <img src="https://i.ibb.co/ZBXNfqH/xmlrpc.png">
+    <br>
+    <h2>Impact</h2>
+    <ul>
+        <li>This can be automated from multiple hosts and be used to cause a mass DDOS attack on the victim</li>
+        <li>This method is also used for brute force attacks to stealing the admin credentials and other important credentials</li>
+        <li>Can cause great harm to all off your subdomain site too</li>
+        <li>Can loosing reputation</li>
+        <li>Losing access to your sites</li>
+    </ul>
+    <br>
+    <h2>Fix</h2>
+    <p>Make sure that your xmlrpc.php is not publically available</p>
+    <br>
+    <h3>Researcher</h3>
+    <p><b>Name: </b>Mehedi Hasan Remon</p>
+    <p><b>Social Handle: </b>@mehedi1194</p>
+</body>
+</html>" | mailx -a 'Content-Type: text/html' -s " XMLRPC.PHP file publically available leads multiple vulnerability" "$2"
+echo " "
+echo -e "${PINK}[*] Sended report of $i ${STOP}";
+done 
+
+echo " "
+echo -e "${Gcyan}[#] I am done with my job${STOP}"
+echo -e "${Gcyan}[#] Now let's see how much dup you get xD${STOP}"
