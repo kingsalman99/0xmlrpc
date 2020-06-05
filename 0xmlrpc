@@ -44,7 +44,7 @@ echo " "
 echo -e "${Cyan}[\/] Sending report email to $2 ${STOP}"
 for i in $(cat $1.xmlrpc.final);do
 
-echo "<!DOCTYPE html>
+curl --silent -d "<methodCall><methodName>system.listMethods</methodName><params></params></methodCall>" $i/xmlrpc.php --connect-timeout 10 | grep -q "pingback.ping" && { echo "<!DOCTYPE html>
 <html lang="en">
     <head>
     <title>0xmlrpc report for $i</title>
@@ -57,7 +57,7 @@ echo "<!DOCTYPE html>
 <body>
     <p>Hello</p>
     <p>your xmlrpc.php file is publicly available. it can lead to SSRF, Admin panel Bruteforce, DDOS attacks.</p>
-    <p>it's highly recommend to not make public those sensitive endpoints. I will mention those issues in details below</p>
+    <p>it's highly recommended to not make public those sensitive endpoints. I will mention those issues in details below</p>
     <br>
     <h2>Reproduce</h2>
     <ol>
@@ -72,10 +72,13 @@ echo "<!DOCTYPE html>
     <ul>
         <li>This can be automated from multiple hosts and be used to cause a mass DDOS attack on the victim</li>
         <li>This method is also used for brute force attacks to stealing the admin credentials and other important credentials</li>
-        <li>Can cause great harm to all off your subdomain site too</li>
-        <li>Can loosing reputation</li>
+        <li>Can cause great harm to all of your subdomain sites too</li>
+        <li>Can losing reputation</li>
         <li>Losing access to your sites</li>
     </ul>
+    <br>
+    <h2>References</h2>
+    <p><b>Medium: </b>https://medium.com/@the.bilal.rizwan/wordpress-xmlrpc-php-common-vulnerabilites-how-to-exploit-them-d8d3c8600b32</p>
     <br>
     <h2>Fix</h2>
     <p>Make sure that your xmlrpc.php is not publically available</p>
@@ -86,7 +89,63 @@ echo "<!DOCTYPE html>
 </body>
 </html>" | mailx -a 'Content-Type: text/html' -s " XMLRPC.PHP file publically available leads multiple vulnerability" "$2"
 echo " "
-echo -e "${PINK}[*] Sended report of $i ${STOP}";
+echo -e "${PINK}[*] Sended XMLRPC report of   $i ${STOP}"; } || { echo "<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>0xmlrpc SSRF report</title>
+    <style>
+        img{
+            height: 300px;
+        }
+        .img1{
+            height: 500px;
+        }
+    </style>
+</head>
+<body>
+    <p>Hello</p>
+    <p>your xmlrpc.php file is publicly available. it can lead to SSRF, Admin panel Bruteforce, DDOS attacks.</p>
+    <p>I will give SSRF exploitation POC below, You can exploit others yourself payloads will the there :)</p>
+    <p>it's highly recommended to not make public those sensitive endpoints.</p>
+    <br>
+    <h2>Reproduce</h2>
+    <ol>
+        <li>visit $i</li>
+        <li>change request method GET to POST</li>
+        <li>add those payloads in the request body to check different issues</li>
+    </ol>
+    <br>
+    <img class="img1" src="https://i.ibb.co/ZBXNfqH/xmlrpc.png">
+    <br>
+    <h2>SSRF Exploit POC</h2>
+    <ul>
+        <li>This curl oneliner will do the work for you</li>
+        <br>
+        <img src="https://i.ibb.co/W2TSNbt/ssrfPoc.png">
+    </ul>
+    <h2>Impact</h2>
+    <ul>
+        <li>This can be automated from multiple hosts and be used to cause a mass DDOS attack on the victim</li>
+        <li>This method is also used for brute force attacks to stealing the admin credentials and other important credentials</li>
+        <li>Can cause great harm to all of your subdomain sites too</li>
+        <li>Can losing reputation</li>
+        <li>Losing access to your sites</li>
+    </ul>
+    <br>
+    <h2>References</h2>
+    <p><b>Medium: </b>https://medium.com/@the.bilal.rizwan/wordpress-xmlrpc-php-common-vulnerabilites-how-to-exploit-them-d8d3c8600b32</p>
+    <p><b>Vuln Classification: </b>https://www.tenable.com/plugins/nessus/64453</p>
+    <br>
+    <h2>Fix</h2>
+    <p>Make sure that your xmlrpc.php is not publically available</p>
+    <br>
+    <h3>Researcher</h3>
+    <p><b>Name: </b>Mehedi Hasan Remon</p>
+    <p><b>Social Handle: </b>@mehedi1194</p>
+</body>
+</html>" | mailx -a 'Content-Type: text/html' -s " SSRF via xmlrpc.php explotation of CVE-2013-0235" "$2"
+echo " "
+echo -e "${PINK}[*] Sended SSRF   report of   $i ${STOP}"; }
 done 
 
 echo " "
